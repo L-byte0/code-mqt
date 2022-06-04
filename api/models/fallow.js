@@ -1,10 +1,10 @@
 'use strict'
-var mongoose=require('mongoose');
-var Schema= mongoose.Schema;
+var mongoose = require('mongoose');
+var Schema = mongoose.Schema;
 
 var FollowSchema = Schema({//Esquema de follow
-    user:{type: Schema.ObjetId, ref: 'User'},
-    followed:{type: Schema.ObjetId, ref: 'User'}
+    user: { type: Schema.ObjectId, ref: 'User' },
+    followed: { type: Schema.ObjectId, ref: 'User' }
 });
 
-module.exports=mongoose.model('Follow', FollowSchema);//Para hacer uso fuera
+module.exports = mongoose.model('Follow', FollowSchema);//Para hacer uso fuera

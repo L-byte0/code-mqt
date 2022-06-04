@@ -1,6 +1,7 @@
 'use strict'
 //Importa el modelo de usuario, la variable inicia con letra mayuscula para indicar que es un modelo
 var User = require('../models/user');
+var Follow  = require('../models/fallow');
 var bcrypt = require('bcrypt');//Paquete para cifrar contraseña
 var jwt = require('../services/jwt');
 var mongoosePaginate = require('mongoose-pagination')
