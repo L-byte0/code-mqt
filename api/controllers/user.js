@@ -117,12 +117,17 @@ function loginUser(req, res) {
 function getUser(req, res) {
     var userId = req.params.id;
     User.findById(userId, (err, user) => {
-
         if (err) return res.status(500).send({ message: 'Error en la peticion' });
-
         if (!user) return res.status(404).send({ message: 'usuario no existe' });
-
-        return res.status(200).send({ user });
+        //-------------------Sigo a este usuario?
+        //Comprueba si nosotros como user identificado estamos siguiendo al usuario que llega por el url
+        //Se usa exec para ejecutar la quiero
+        Follow.findOne({'user': req.user.sub, "followed": userId}).exec((err, follow) => {
+            //Comprueba si esta siguiendo al usuario
+            if (err) return res.status(500).send({ message: 'Error al comprobar el seguimiento' });
+            return res.status(200).send({user, follow});
+        })
+        //------------------Fin de sigo a este usuario
     });
 }
 
