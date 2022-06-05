@@ -1,7 +1,7 @@
 'use strict'
 //Importa el modelo de usuario, la variable inicia con letra mayuscula para indicar que es un modelo
 var User = require('../models/user');
-var Follow  = require('../models/fallow');
+var Follow = require('../models/fallow');
 var bcrypt = require('bcrypt');//Paquete para cifrar contraseña
 var jwt = require('../services/jwt');
 var mongoosePaginate = require('mongoose-pagination')
@@ -114,23 +114,52 @@ function loginUser(req, res) {
 //----------------------Fin de funcion de login
 
 //----------------------Conseguir datos del usuario
+//Consigue la informacion añadida por id con autenticacion y muestra los usuarios que sigue y los que lo siguen
 function getUser(req, res) {
     var userId = req.params.id;
     User.findById(userId, (err, user) => {
         if (err) return res.status(500).send({ message: 'Error en la peticion' });
         if (!user) return res.status(404).send({ message: 'usuario no existe' });
-        //-------------------Sigo a este usuario?
-        //Comprueba si nosotros como user identificado estamos siguiendo al usuario que llega por el url
-        //Se usa exec para ejecutar la quiero
-        Follow.findOne({'user': req.user.sub, "followed": userId}).exec((err, follow) => {
-            //Comprueba si esta siguiendo al usuario
-            if (err) return res.status(500).send({ message: 'Error al comprobar el seguimiento' });
-            return res.status(200).send({user, follow});
-        })
-        //------------------Fin de sigo a este usuario
+        //Se hace llamada a la funcion
+        followThisUser(req.user.sub, userId).then((value) => {
+            //No devuelve password
+            user.password = undefined;
+            return res.status(200).send({
+                user,
+                following: value.following,
+                followed: value.followed
+            });
+        });
     });
 }
 
+//Se hace una funcion asincrona para comprobar los usuarios que me siguen
+/*Cuando se llame al metodo se le pasan los parametros, crea una variable following y con el await se espera que el find
+//Devuelva un resultado y lo guarda en la variable
+*/
+async function followThisUser(identity_user_id, user_id) {
+    //identity_user_id :: nosotros
+    //Comprueba si el identity_user_id es el usuario y el usuario seguido es el user_id
+    //Se espera a que le llegue un resultado, convirtiendola en una funcion sincrona
+    var following = await Follow.findOne({ "user": identity_user_id, "followed": user_id }).exec().then((follow) => {
+        //Guarda dentro de la variable el resultado del find
+        return follow;
+    }).catch((err) => {
+        return handleError(err);
+    });
+ 
+    var followed = await Follow.findOne({ "user": user_id, "followed": identity_user_id }).exec().then((follow) => {
+        console.log(follow);
+        return follow;
+    }).catch((err) => {
+        return handleError(err);
+    });
+    //Devuelve json
+    return {
+        following: following,
+        followed: followed
+    }
+}
 //----------------------Fin de conseguir los datos del usuario
 
 //----------------------Funcion para listar los usuarios paginados
@@ -144,13 +173,13 @@ function getUsers(req, res) {
     }
     var itemsPage = 5; //Lista de usuarios por pagina
     User.find().sort('_id').paginate(page, itemsPage, (err, users, total) => {
-        if (err) return res.status(500).send({ message: 'error en la peticion'});
+        if (err) return res.status(500).send({ message: 'error en la peticion' });
         if (!users) return res.status(404).send({ message: 'No usuarios en la plataforma' });
         //devolver usuarios
         return res.status(200).send({
             users,
             total,
-            page: Math.ceil(total/itemsPage)//Redondeo y saca el numero de paginas que van a existir
+            page: Math.ceil(total / itemsPage)//Redondeo y saca el numero de paginas que van a existir
         });
 
     });
@@ -158,33 +187,33 @@ function getUsers(req, res) {
 //----------------------Fin de funcion para usuarios paginados
 
 //---------------------Actualizar los datos del usuario
-function updateUser(req, res){
+function updateUser(req, res) {
     var userId = req.params.id;
     var update = req.body;
     //Borrar la propiedad password
     delete update.password;
 
-    if(userId != req.user.sub){//el userid que se recibe por url tiene que ser el mismo que el que tiene el objeto del token
-        return res.status(500).send({message: 'No tienes permiso para actualizar los datos'});
+    if (userId != req.user.sub) {//el userid que se recibe por url tiene que ser el mismo que el que tiene el objeto del token
+        return res.status(500).send({ message: 'No tienes permiso para actualizar los datos' });
     }
-    User.findByIdAndUpdate(userId, update, {new: true}, (err, userUpdated) =>{
-        if (err) return res.status(500).send({message: 'error en la peticion'})
-        if(!userUpdated) return res.status(404).send({message: 'No se ha podido actualizar el usuario'})
+    User.findByIdAndUpdate(userId, update, { new: true }, (err, userUpdated) => {
+        if (err) return res.status(500).send({ message: 'error en la peticion' })
+        if (!userUpdated) return res.status(404).send({ message: 'No se ha podido actualizar el usuario' })
         //Todo bien
-        return res.status(200).send({user: userUpdated});
+        return res.status(200).send({ user: userUpdated });
     });
 };
 
 //-------------------------Fin de actualizar usuario
 
 //-------------------------Inicio de subir imagen/avatar
-function uploadImage(req, res){
+function uploadImage(req, res) {
     var userId = req.params.id;
-    if(req.files){
+    if (req.files) {
         var file_path = req.files.image.path;
         console.log(file_path);
         var file_split = file_path.split(/[\\/]/);
-        var file_name=file_split[2];//Carga nombre del archivo
+        var file_name = file_split[2];//Carga nombre del archivo
         console.log(file_name);
 
         var ext_split = file_name.split('\.')//Corta el nombre del archivo por el punto
@@ -192,33 +221,33 @@ function uploadImage(req, res){
         var file_ext = ext_split[1];//Extencion del archivo
         console.log(file_ext);
 
-        if(userId != req.user.sub){//el userid que se recibe por url tiene que ser el mismo que el que tiene el objeto del token
+        if (userId != req.user.sub) {//el userid que se recibe por url tiene que ser el mismo que el que tiene el objeto del token
             return removeFileOfUploads(res, file_path, 'No tienes permiso para actualizar los datos');
         }
-        
+
         //Comprueba que las extenciones sean correctas
-        if(file_ext == 'png' || file_ext == 'jpg' || file_ext == 'jpeg' || file_ext == 'gif'){
+        if (file_ext == 'png' || file_ext == 'jpg' || file_ext == 'jpeg' || file_ext == 'gif') {
             //Actualiza documento del usuario logeado
-            User.findByIdAndUpdate(userId, {image: file_name}, {new: true}, (err, userUpdated) => {
-                if (err) return res.status(500).send({message: 'error en la peticion'})
-                if(!userUpdated) return res.status(404).send({message: 'No se ha podido actualizar el usuario'})
+            User.findByIdAndUpdate(userId, { image: file_name }, { new: true }, (err, userUpdated) => {
+                if (err) return res.status(500).send({ message: 'error en la peticion' })
+                if (!userUpdated) return res.status(404).send({ message: 'No se ha podido actualizar el usuario' })
                 //Todo bien
-                return res.status(200).send({user: userUpdated});
+                return res.status(200).send({ user: userUpdated });
             });
-        }else{//En caso de que la extencion sea mala
+        } else {//En caso de que la extencion sea mala
             return removeFileOfUploads(res, file_path, 'extencion no valida');
         }
 
-    }else{
-        return res.status(200).send({message: 'No se han subido archivos'});
+    } else {
+        return res.status(200).send({ message: 'No se han subido archivos' });
     }
 }
 //-------------------------Fin de subir imagen/avatar
 
 //-----------------Inicio Funcion de borrar archivo si no cumple las condiciones
-function removeFileOfUploads(res, file_path, message){
+function removeFileOfUploads(res, file_path, message) {
     fs.unlink(file_path, (err) => {
-        return res.status(200).send({message: message});
+        return res.status(200).send({ message: message });
     });
 }
 //---------------Fin Funcion de borrar archivo si no cumple las condiciones
@@ -227,7 +256,7 @@ function removeFileOfUploads(res, file_path, message){
 function getImage(req, res) {
     let imageFile = req.params.imageFile;
     let pathFile = './upload/users/' + imageFile;
- 
+
     fs.stat(pathFile, (err, exists) => {
         if (exists) {
             res.sendFile(path.resolve(pathFile));
