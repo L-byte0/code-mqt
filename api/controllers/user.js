@@ -147,7 +147,7 @@ async function followThisUser(identity_user_id, user_id) {
     }).catch((err) => {
         return handleError(err);
     });
- 
+
     var followed = await Follow.findOne({ "user": user_id, "followed": identity_user_id }).exec().then((follow) => {
         console.log(follow);
         return follow;
@@ -176,15 +176,55 @@ function getUsers(req, res) {
         if (err) return res.status(500).send({ message: 'error en la peticion' });
         if (!users) return res.status(404).send({ message: 'No usuarios en la plataforma' });
         //devolver usuarios
-        return res.status(200).send({
-            users,
-            total,
-            page: Math.ceil(total / itemsPage)//Redondeo y saca el numero de paginas que van a existir
+        followUserIds(identity_user_id).then((value) => {
+            //Devuelve los id de los usuarios que nos siguen
+            return res.status(200).send({
+                users,
+                users_fallowing: value.following,
+                users_follow_me: value.followed,
+                total,
+                page: Math.ceil(total / itemsPage)//Redondeo y saca el numero de paginas que van a existir
+            });
         });
-
     });
 }
 //----------------------Fin de funcion para usuarios paginados
+
+//----------------------Funcion
+async function followUserIds(user_id) {
+    //Con el metodo select desmarca los campos que no se quieren que salga
+    //Se utiliza el await para cuando se ejecute se espere el return
+    var following = await Follow.find({ "user": user_id }).select({ '_id': 0, '__uv': 0, 'user': 0 }).exec().then((follows) => {
+        var follows_clean = [];
+        //Recorre el array de follows  pero por cada iteracion crea un objeto follows
+        follows.forEach((follow) => {
+            follows_clean.push(follow.followed);//Se le pasa array limpio
+        });
+        console.log(follows_clean);
+        return follows_clean;
+    }).catch((err) => {
+        return handleerror(err);
+    });
+    //El usuario somos nosotros
+    var followed = await Follow.find({ "followed": user_id }).select({ '_id': 0, '__uv': 0, 'followed': 0 }).exec().then((follows) => {
+        var follows_clean = [];
+        follows.forEach((follow) => {
+            follows_clean.push(follow.user);
+        });
+        return follows_clean;
+    }).catch((err) => {
+        return handleerror(err);
+    });
+
+    console.log(following);
+
+    return {
+        following: following,
+        followed: followed
+    }
+}
+//----------------------Funcion
+
 
 //---------------------Actualizar los datos del usuario
 function updateUser(req, res) {
