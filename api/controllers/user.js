@@ -190,7 +190,7 @@ function getUsers(req, res) {
 }
 //----------------------Fin de funcion para usuarios paginados
 
-//----------------------Funcion
+//----------------------Funcion para listar usuarios que nos siguen y que segimos al momento de consultar usuarios
 async function followUserIds(user_id) {
     //Con el metodo select desmarca los campos que no se quieren que salga
     //Se utiliza el await para cuando se ejecute se espere el return
@@ -223,8 +223,46 @@ async function followUserIds(user_id) {
         followed: followed
     }
 }
-//----------------------Funcion
+//----------------------Fin Funcion para listar usuarios que nos siguen y que segimos al momento de consultar usuarios
 
+//----------------------Funcion para obtener contadores
+function getCounters(req, res){
+    var userId= req.user.sub;
+    if (req.params.id){//Si se recibe el parametro por el url
+        userId = req.params.id;
+        //Se hace llamada a la funcion getCOuntFollow y se pasa el id del usuario
+    };
+    getCountFollow(userId).then((value) => {
+          return res.status(200).send(value);
+    });
+}
+
+//----------------------Fin funcion para obtener contadores
+
+//---------------------Funcion para hacer conteo de los usuarios que seguimos y que nos siguen
+async function getCountFollow(user_id) {
+    //Contador de usuarios que seguimos
+    //count == metodo para contar la cantidad de registros que hay en los documentos
+    //countDocuments == 
+    var following = await Follow.countDocuments({ user: user_id })
+        .exec()
+        .then((count) => {
+            console.log(count);
+            return count;
+        })
+        .catch((err) => { return handleError(err); });
+    //Contador de usuarios que nos estan siguiendo
+    var followed = await Follow.countDocuments({ followed: user_id })
+        .exec()
+        .then((count) => {
+            return count;
+        })
+        .catch((err) => { return handleError(err); });
+
+    return { following: following, followed: followed }
+
+}
+//------------------Fin Funcion para hacer conteo de los usuarios que seguimos y que nos siguen
 
 //---------------------Actualizar los datos del usuario
 function updateUser(req, res) {
@@ -319,6 +357,7 @@ module.exports = {
     loginUser,
     getUser,
     getUsers,
+    getCounters,
     updateUser,
     uploadImage,
     getImage
