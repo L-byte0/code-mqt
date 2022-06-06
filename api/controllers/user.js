@@ -2,11 +2,13 @@
 //Importa el modelo de usuario, la variable inicia con letra mayuscula para indicar que es un modelo
 var User = require('../models/user');
 var Follow = require('../models/fallow');
+var Publication = require('../models/publication');
 var bcrypt = require('bcrypt');//Paquete para cifrar contraseña
 var jwt = require('../services/jwt');
 var mongoosePaginate = require('mongoose-pagination')
 var fs = require('fs'); //Permite trabajar con archivos
 var path = require('path');//Permite trabajar con rutas de ficheros
+const { exec } = require('child_process');
 
 //Funcion de las rutas
 function home(req, res) {
@@ -226,14 +228,14 @@ async function followUserIds(user_id) {
 //----------------------Fin Funcion para listar usuarios que nos siguen y que segimos al momento de consultar usuarios
 
 //----------------------Funcion para obtener contadores
-function getCounters(req, res){
-    var userId= req.user.sub;
-    if (req.params.id){//Si se recibe el parametro por el url
+function getCounters(req, res) {
+    var userId = req.user.sub;
+    if (req.params.id) {//Si se recibe el parametro por el url
         userId = req.params.id;
         //Se hace llamada a la funcion getCOuntFollow y se pasa el id del usuario
     };
     getCountFollow(userId).then((value) => {
-          return res.status(200).send(value);
+        return res.status(200).send(value);
     });
 }
 
@@ -244,7 +246,7 @@ async function getCountFollow(user_id) {
     //Contador de usuarios que seguimos
     //count == metodo para contar la cantidad de registros que hay en los documentos
     //countDocuments == 
-    var following = await Follow.countDocuments({ user: user_id })
+    var following = await Follow.countDocuments({ "user": user_id })
         .exec()
         .then((count) => {
             console.log(count);
@@ -252,14 +254,25 @@ async function getCountFollow(user_id) {
         })
         .catch((err) => { return handleError(err); });
     //Contador de usuarios que nos estan siguiendo
-    var followed = await Follow.countDocuments({ followed: user_id })
+    var followed = await Follow.countDocuments({ "followed": user_id })
         .exec()
         .then((count) => {
             return count;
         })
         .catch((err) => { return handleError(err); });
 
-    return { following: following, followed: followed }
+    var publications = await Publication.countDocuments({ "user": user_id })
+        .exec().then(count => {
+            return count;
+        }).catch((err) => {
+            if (err) return handleError(err);
+        });
+
+    return {
+        following: following,
+        followed: followed,
+        publications: publications
+    }
 
 }
 //------------------Fin Funcion para hacer conteo de los usuarios que seguimos y que nos siguen
