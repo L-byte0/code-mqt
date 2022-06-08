@@ -360,8 +360,6 @@ function getImage(req, res) {
 }
 //----------------Fin de obtener imagen
 
-
-
 //Exporta las funciones de los modelos para que puedan ser utilizadas fuera del archivo
 module.exports = {
     home,
