@@ -1,0 +1,27 @@
+.container-md{
+    font-family: 'Roboto', sans-serif;
+    font-size: 2.5vh;
+}
+.navbar > .container-fluid > .navbar-brand{
+    font-family: 'Lobster', cursive;
+    font-size: 4vh;
+}
+.btn-start{
+    display: inline-block;
+    margin: auto;
+    width: 60%;
+    text-align: right;
+    color: #ffffff;
+}
+
+.carousel-inner > .carousel-item > img {
+    object-fit: scale-down;
+    height: 65vh;
+    width: 100%;
+}
+
+.col > img{
+    object-fit: scale-down;
+    height: 35vh;
+    width: 100%;
+}
