@@ -1,0 +1,42 @@
+* {
+    margin: 0%;
+    padding: 0%;
+    box-sizing: border-box;
+}
+
+.signup-form-container {
+    width: 400px;
+    background-color: azure;
+    padding: 30px;
+    margin: auto;
+    margin-top: 100px;
+    border-radius: 4px;
+}
+
+.register-form h4 {
+    font-size: 22px;
+    margin-bottom: 20px;
+}
+.from-group{
+    width: 100%;
+    padding: 10px;
+    border-radius: 4;
+    margin-bottom: 16px;
+    border: 1px solid;
+    font-size: 18px;
+}
+.form-body {
+    margin-top: 100px;
+    margin: auto;
+    padding: 15px;
+
+}
+
+.input-grup {
+    width: 100%;
+    padding: 10px;
+    border-radius: 4;
+    margin-bottom: 16px;
+    border: 1px solid;
+    font-size: 18px;
+}
